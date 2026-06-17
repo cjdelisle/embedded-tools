@@ -1,4 +1,7 @@
 const { SerialPort } = require('serialport');
+const XModem = require('xmodem.js');
+
+const { sleep_ms } = require('./util.js');
 
 /**
  * @typedef {() => string | void} callback
@@ -43,16 +46,19 @@ module.exports.Serial = (portPath, func) => {
     async function sendText(data) {
         if (done) { return; }
         console.log('< ' + data);
-        await new Promise((resolve) => {
-            port.write(data + '\r', (err) => {
-                if (err) console.error('Write error:', err.message);
-                resolve();
+        for (let char of (data + '\r')) {
+            await new Promise((resolve) => {
+                    port.write(char, (err) => {
+                        if (err) console.error('Write error:', err.message);
+                        resolve();
+                    });
             });
-        });
+            await sleep_ms(10);
+        }
     }
 
     async function recvLine(line) {
-        console.log('> ' + line);
+        console.log('> ' + line.replace(/[\r\n]/g, ''));
         textHandler(line);
     }
 
@@ -103,10 +109,11 @@ module.exports.Serial = (portPath, func) => {
 
     const abort = () => {
         done = true;
+        noOutputHandler = null;
         resetLineQuietTimer();
     };
 
-    port.on('data', async (data) => {
+    const onData = async (data) => {
         data = remaining + data.toString();
         const lines = data.split('\r');
         remaining = lines.pop();
@@ -114,7 +121,63 @@ module.exports.Serial = (portPath, func) => {
             recvLine(line.trim());
         }
         resetLineQuietTimer();
-    });
+    };
+
+    async function sendXmdm(data) {
+        const noh = noOutputHandler;
+        noOutputHandler = null;
+        port.removeListener('data', onData);
+
+        return new Promise((resolve) => {
+
+            const done = (err) => {
+                if (!resolve) {
+                    return;
+                }
+                const r = resolve;
+                resolve = null;
+                r(err);
+            };
+
+            let errorTimeout;
+            const updateErrorTimeout = () => {
+                if (errorTimeout) { clearTimeout(errorTimeout); }
+                errorTimeout = setTimeout(() => {
+                    console.log('Timeout waiting for xmodem reply');
+                    done(new Error('Timeout waiting for xmodem reply'));
+                }, 20000);
+            }
+
+            let timeOfLastMsg = 0;
+
+            XModem.on('status', (st) => {
+                updateErrorTimeout();
+                if ((+new Date() - timeOfLastMsg) < 3000) {
+                    return;
+                }
+                if (st.action === 'send') {
+                    const doneK = Math.floor(st.block * 128 / 1024);
+                    const totalK = Math.floor(data.length / 1024);
+                    const pct = Math.floor(doneK / totalK * 100);
+                    console.log(`SEND ${doneK}K / ${totalK}K (${pct}%)`);
+                    timeOfLastMsg = +new Date();
+                    return;
+                } else if (st.action === 'recv' && st.signal === 'ACK') {
+                    return;
+                }
+                console.log('Unknown event:', st);
+            });
+            XModem.on('stop', (st) => {
+                console.log('xmdm done', st);
+                if (errorTimeout) { clearTimeout(errorTimeout); }
+                port.on('data', onData);
+                done(null);
+            });
+            XModem.send(port, data);
+        });
+    }
+
+    port.on('data', onData);
 
     // Close the port when done (optional, depending on your use case)
     port.on('end', () => console.log('Port closed'));
@@ -124,7 +187,7 @@ module.exports.Serial = (portPath, func) => {
         setTimeout(() => {
             (async () => {
                 console.log("start");
-                await func(Object.freeze({sendText, waitText, onNoOutput, abort}));
+                await func(Object.freeze({sendText, waitText, onNoOutput, abort, sendXmdm}));
                 done = true;
                 resetLineQuietTimer();
             })();

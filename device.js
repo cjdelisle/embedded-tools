@@ -3,7 +3,7 @@ const path = require('path');
 
 const Config = require('./config.js');
 
-async function findDeviceByPath(targetPath) {
+const findDeviceByPath = module.exports.findDeviceByPath = async (targetPath) => {
   try {
     // Directory where USB devices are listed
     const usbDir = '/sys/bus/usb/devices/';
@@ -60,4 +60,7 @@ const main = async () => {
   }
   console.log(dp);
 };
-main();
+
+if (require.main === module) {
+  main();
+}

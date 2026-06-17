@@ -20,3 +20,13 @@ module.exports.DEVICES = Object.freeze({
     smartfiber_xp8100:      { usb: USB.bus0[2], relay: 3 },
     archer_vr1200v_v2:      { usb: USB.bus0[3], relay: 4 },
 });
+
+module.exports.SSID = {
+    name: 'my_home_ssid', // should be 2.4 AND 5ghz
+    passwd: 'password',
+};
+
+module.exports.testServer = {
+    password: 'you_will_never_guess_this',
+    port: 8889,
+};
