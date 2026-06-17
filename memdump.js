@@ -24,7 +24,10 @@ async function run(tty, relayTTy, relayChannel, start, end) {
             }, 3000);
             await serial.waitText((text) => /enter boot command mode/.test(text));
             serial.sendText('');
-            // TODO handle username/password
+            await serial.waitText((text) => /UserName/.test(text));
+            serial.sendText('telecomadmin');
+            await serial.waitText((text) => /Password/.test(text));
+            serial.sendText('nE7jA%5m');
             await serial.waitText((text) => /bldr/.test(text));
             serial.sendText(`dump ${continueFrom.toString(16)} ${remainingLength.toString(16)}`);
             await serial.waitText((text) => {
