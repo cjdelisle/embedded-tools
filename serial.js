@@ -131,6 +131,8 @@ module.exports.Serial = (portPath, func) => {
         return new Promise((resolve) => {
 
             const done = (err) => {
+                noOutputHandler = noh;
+                resetLineQuietTimer();
                 if (!resolve) {
                     return;
                 }

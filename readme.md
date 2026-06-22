@@ -23,3 +23,13 @@ Disconnect your terminal so you have the complete log file.
 data from the dump, if there is any problem, it will error out.
 
 If `parse_mtddump.js` completes successfully, you will have a complete image of the mtd from the
+
+## Device Testing
+
+This repository also contains support for automated testing on live devices. The following files
+are used to support that:
+
+* `device_tests.js` - The battery of tests that will run on each device
+* `test_device.js` - The local test runner
+* `test_server.js` - An http server which allows remote calling of `test_device.js`
+* `remote_test.js` - A client that will use `test_server.js` to conduct a test remotely
