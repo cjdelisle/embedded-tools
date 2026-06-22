@@ -1,11 +1,13 @@
 # Embedded Tools
 
+![embedded_testing_lab](https://raw.githubusercontent.com/cjdelisle/embedded-tools/refs/heads/master/embedded_testing_lab.png)
+
 * `config.js` - Configuration of the USB ports of your devices and relay numbers
 * `device.js` - Parse config.js and get the correct /dev/ttyUSB and relay number for a device by name
 * `relay.js` - Controller for SainSmart (compatible) 16 line USB serial controlled relay
 * `serial.js` - Lib for allowing you to write expect-like scripts for interfacing with modems
 * `util.js` - Generic crap
-* `memdump.js` - Read a range of memory in the bootloader, reset the relay if the device hangs
+* `memdump.js` - (EcoNet specific) Read a range of memory in the bootloader, reset the relay if the device hangs
 * `parse_memdump.js` - Parse the output of memdump.js and generate CSV files of 16 pages each
 
 ## mtddump.sh (does not require relay)
